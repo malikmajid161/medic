@@ -1,0 +1,8 @@
+{
+  "appId": "com.medic.doctorappointment",
+  "appName": "Medic",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
