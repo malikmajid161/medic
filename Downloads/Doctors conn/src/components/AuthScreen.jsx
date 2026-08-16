@@ -120,8 +120,12 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           <ArrowLeft size={20} color="#0b5d71" />
         </button>
 
-        <div className="team-banner-wrapper">
-          <img src="/assets/medical_team.png" alt="Medical Team" className="team-banner-img" />
+        <div className="doctor-animation-wrapper">
+          <div className="pulse-circle"></div>
+          <div className="pulse-circle delay-1"></div>
+          <div className="doctor-icon-container">
+            <Stethoscope size={48} color="#0b5d71" strokeWidth={1.5} />
+          </div>
         </div>
       </div>
 
@@ -135,10 +139,9 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
             : 'Fill in your credentials to create your account'}
         </p>
 
-        {/* 1-Tap Quick Demo Credentials Bar for Testing on Multiple Phones */}
         {mode === 'login' && (
           <div className="quick-demo-section">
-            <span className="demo-section-label"><Sparkles size={13} color="#0b5d71" /> Quick Demo Logins (1-Tap Test):</span>
+            <span className="demo-section-label"><Sparkles size={13} color="#0b5d71" /> Quick Login Profiles:</span>
             <div className="demo-chips-row">
               {MOCK_ACCOUNTS.map((acc) => (
                 <button
@@ -186,11 +189,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           </div>
         )}
 
-        {isSupabaseConfigured && (
-          <div className="live-db-badge">
-            <span className="live-dot"></span> Supabase Connected
-          </div>
-        )}
+
 
         {errorMsg && (
           <div className="auth-alert error-alert">
@@ -354,7 +353,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
                   setSuccessMsg('');
                 }}
               >
-                Sign Up Now
+                Sign Up
               </button>
             </p>
           ) : (
@@ -390,10 +389,53 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
 
         .auth-header {
           position: relative;
-          padding: 16px 20px 0;
+          padding: 30px 20px 10px;
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
+        }
+
+        .doctor-animation-wrapper {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 10px;
+        }
+
+        .doctor-icon-container {
+          position: relative;
+          width: 80px;
+          height: 80px;
+          background: #ffffff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 20px rgba(11, 93, 113, 0.15);
+          z-index: 2;
+        }
+
+        .pulse-circle {
+          position: absolute;
+          width: 80px;
+          height: 80px;
+          background: #0b5d71;
+          border-radius: 50%;
+          opacity: 0.2;
+          animation: pulse 2s infinite ease-out;
+        }
+
+        .pulse-circle.delay-1 {
+          animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.3; }
+          100% { transform: scale(1.6); opacity: 0; }
         }
 
         .back-btn {
@@ -413,20 +455,6 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           z-index: 5;
         }
 
-        .team-banner-wrapper {
-          width: 100%;
-          max-width: 240px;
-          height: 110px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .team-banner-img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-        }
 
         .auth-card {
           flex: 1;
