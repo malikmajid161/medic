@@ -1,16 +1,62 @@
-# React + Vite
+# 🩺 Medic - Doctor Appointment & Healthcare App
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A high-performance, cross-platform React & Capacitor healthcare application designed and built by **Majid Ali**.
 
-Currently, two official plugins are available:
+![Medic App Banner](public/favicon.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌟 Key Features
+- **Dual Role Access (Patient & Doctor)**: Sign up or sign in as a Patient to book visits or as a Doctor to manage incoming appointment requests in real-time.
+- **Smart Doctor Search Engine**: Fast multi-keyword, case-insensitive fuzzy filtering by doctor name, specialty, hospital, city, and fee range.
+- **Doctor Portal Dashboard**: Real-time incoming appointment request management (Accept/Decline) with instant status persistence.
+- **Appointment History**: Track past & upcoming appointments with printable pass tickets.
+- **Supabase Authentication & Storage**: Session persistence with live Supabase authentication integration and offline-first fallback.
+- **Mobile Native Build Ready**: Native Android app build powered by Capacitor.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🔑 Quick Test Credentials (2-Phone Testing)
 
-## Expanding the Oxlint configuration
+| Role | Name | Email | Password |
+|---|---|---|---|
+| **Patient** | Zunaira Mughal | `patient@medic.com` | `password123` |
+| **Doctor (Cardiologist)** | Dr. Ahmed Ali | `dr.ahmed@medic.com` | `password123` |
+| **Doctor (Dermatologist)** | Dr. Sarah Khan | `dr.sarah@medic.com` | `password123` |
+| **Doctor (Neurologist)** | Dr. Muhammad Hassan | `dr.hassan@medic.com` | `password123` |
+| **Doctor (Pediatrician)** | Dr. Ayesha Malik | `dr.ayesha@medic.com` | `password123` |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+---
+
+## 🛠️ Technology Stack
+- **Frontend Framework**: React 19 + Vite
+- **Styling**: Vanilla CSS with modern Glassmorphism, CSS Custom Variables, & Micro-animations
+- **Icons**: Lucide React
+- **Backend & Auth**: Supabase Auth + Supabase DB (`appointments` table)
+- **Mobile Bridge**: Capacitor 8 (Android)
+
+---
+
+## 🚀 How to Run Locally
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run local dev server
+npm run dev
+
+# 3. Build production web bundle
+npm run build
+
+# 4. Sync assets to Android project
+npx cap sync
+
+# 5. Launch in Android Studio
+npx cap open android
+```
+
+---
+
+## 👨‍💻 Developer & Owner
+**Majid Ali**  
+- **GitHub**: [https://github.com/malikmajid161](https://github.com/malikmajid161)  
+- **Repository**: [https://github.com/malikmajid161/Medic-Doctor-Appointment-App](https://github.com/malikmajid161/Medic-Doctor-Appointment-App)

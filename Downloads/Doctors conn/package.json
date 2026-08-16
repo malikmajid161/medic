@@ -1,7 +1,9 @@
 {
-  "name": "doctors-conn",
+  "name": "medic-doctor-appointment-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Medic - Doctor Appointment Booking & Healthcare Mobile App by Majid Ali",
+  "author": "Majid Ali <malikmajid1063j@gmail.com>",
   "type": "module",
   "scripts": {
     "dev": "vite",
