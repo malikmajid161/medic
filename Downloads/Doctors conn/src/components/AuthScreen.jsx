@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, Stethoscope, Building, Award, DollarSign, Upload } from 'lucide-react';
-import { signInUser, signUpUser, isSupabaseConfigured } from '../lib/supabase';
+import { User, Lock, Mail, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, Stethoscope, Building, Award, DollarSign, Upload, Sparkles } from 'lucide-react';
+import { signInUser, signUpUser, isSupabaseConfigured, MOCK_ACCOUNTS } from '../lib/supabase';
 
 export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }) {
   const [mode, setMode] = useState(isRegister ? 'register' : 'login');
   const [role, setRole] = useState('patient'); // 'patient' or 'doctor'
 
   // Common Fields
-  const [email, setEmail] = useState('zunaira@gmail.com');
-  const [password, setPassword] = useState('12345678');
-  const [fullName, setFullName] = useState('Zunaira Mughal');
+  const [email, setEmail] = useState('dr.ahmed@medic.com');
+  const [password, setPassword] = useState('password123');
+  const [fullName, setFullName] = useState('Dr. Ahmed Ali');
 
   // Doctor Specific Fields
-  const [specialty, setSpecialty] = useState('Cardiologist');
+  const [specialty, setSpecialty] = useState('Cardiologist (Heart)');
   const [hospital, setHospital] = useState('Shaukat Khanum Hospital, Lahore');
   const [experience, setExperience] = useState('10 years of Experience');
   const [fee, setFee] = useState('Rs. 2,500');
@@ -33,6 +33,21 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleQuickDemoSelect = (acc) => {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setFullName(acc.fullName);
+    if (acc.role === 'doctor') {
+      setRole('doctor');
+      setSpecialty(acc.specialty || 'Cardiologist');
+      setHospital(acc.hospital || 'Shaukat Khanum Hospital');
+      setImagePreview(acc.image || '/assets/doc_real_2.jpg');
+    } else {
+      setRole('patient');
+    }
+    setErrorMsg('');
   };
 
   const handleSubmit = async (e) => {
@@ -84,7 +99,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         }, 800);
       } else {
         const userObj = await signInUser(email, password);
-        setSuccessMsg('Signed in successfully!');
+        setSuccessMsg(`Signed in as ${userObj.fullName}!`);
         
         setTimeout(() => {
           setLoading(false);
@@ -116,11 +131,31 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         </h2>
         <p className="auth-subtitle">
           {mode === 'login'
-            ? 'Sign in to manage appointments & consultations'
+            ? 'Sign in to manage appointments & doctor requests'
             : 'Fill in your credentials to create your account'}
         </p>
 
-        {/* Role Toggle Selector */}
+        {/* 1-Tap Quick Demo Credentials Bar for Testing on Multiple Phones */}
+        {mode === 'login' && (
+          <div className="quick-demo-section">
+            <span className="demo-section-label"><Sparkles size={13} color="#0b5d71" /> Quick Demo Logins (1-Tap Test):</span>
+            <div className="demo-chips-row">
+              {MOCK_ACCOUNTS.map((acc) => (
+                <button
+                  type="button"
+                  key={acc.email}
+                  className={`demo-chip-btn ${email === acc.email ? 'active' : ''}`}
+                  onClick={() => handleQuickDemoSelect(acc)}
+                >
+                  <span className="chip-role-tag">{acc.role === 'doctor' ? '👨‍⚕️ Doctor' : '👤 Patient'}</span>
+                  <span className="chip-name">{acc.fullName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Role Toggle Selector for Registration */}
         {mode === 'register' && (
           <div className="role-selector-bar">
             <button
@@ -129,6 +164,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
               onClick={() => {
                 setRole('patient');
                 setFullName('Zunaira Mughal');
+                setEmail('patient@medic.com');
               }}
             >
               <User size={16} />
@@ -141,6 +177,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
               onClick={() => {
                 setRole('doctor');
                 setFullName('Dr. Ahmed Ali');
+                setEmail('dr.ahmed@medic.com');
               }}
             >
               <Stethoscope size={16} />
@@ -212,11 +249,11 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
                       value={specialty}
                       onChange={(e) => setSpecialty(e.target.value)}
                     >
-                      <option value="Cardiologist">Cardiologist (Heart Specialist)</option>
-                      <option value="Dermatologist">Dermatologist (Skin Specialist)</option>
-                      <option value="Neurologist">Neurologist (Brain & Nerves)</option>
-                      <option value="Pediatrician">Pediatrician (Child Specialist)</option>
-                      <option value="Gastroenterologist">Gastroenterologist (Stomach)</option>
+                      <option value="Cardiologist (Heart)">Cardiologist (Heart Specialist)</option>
+                      <option value="Dermatologist (Skin)">Dermatologist (Skin Specialist)</option>
+                      <option value="Neurologist (Brain & Nerves)">Neurologist (Brain & Nerves)</option>
+                      <option value="Pediatrician (Child)">Pediatrician (Child Specialist)</option>
+                      <option value="Gastroenterologist (Stomach)">Gastroenterologist (Stomach)</option>
                       <option value="General Physician">General Physician</option>
                     </select>
                   </div>
@@ -379,7 +416,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         .team-banner-wrapper {
           width: 100%;
           max-width: 240px;
-          height: 120px;
+          height: 110px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -413,6 +450,68 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           font-size: 12.5px;
           color: #64748b;
           margin-bottom: 14px;
+        }
+
+        .quick-demo-section {
+          background: #f0f7f9;
+          border: 1px solid #bae6fd;
+          padding: 10px 12px;
+          border-radius: 14px;
+          margin-bottom: 16px;
+        }
+
+        .demo-section-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #0b5d71;
+          margin-bottom: 8px;
+        }
+
+        .demo-chips-row {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 2px;
+        }
+
+        .demo-chip-btn {
+          flex: 0 0 auto;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 6px 12px;
+          border-radius: 10px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .demo-chip-btn.active {
+          background: #0b5d71;
+          border-color: #0b5d71;
+        }
+
+        .demo-chip-btn.active .chip-role-tag,
+        .demo-chip-btn.active .chip-name {
+          color: #ffffff;
+        }
+
+        .chip-role-tag {
+          font-size: 10px;
+          font-weight: 700;
+          color: #0284c7;
+        }
+
+        .chip-name {
+          font-size: 12px;
+          font-weight: 800;
+          color: #0f172a;
         }
 
         .role-selector-bar {

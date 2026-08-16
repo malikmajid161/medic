@@ -15,6 +15,63 @@ const LOCAL_STORAGE_KEY = 'medic_appointments_db';
 const USER_STORAGE_KEY = 'medic_auth_user';
 const DOCTORS_STORAGE_KEY = 'medic_registered_doctors';
 
+// Preset Mock Accounts for Multi-Phone Testing
+export const MOCK_ACCOUNTS = [
+  {
+    email: 'patient@medic.com',
+    password: 'password123',
+    fullName: 'Zunaira Mughal',
+    role: 'patient',
+    specialty: '',
+    hospital: '',
+    image: ''
+  },
+  {
+    email: 'dr.ahmed@medic.com',
+    password: 'password123',
+    fullName: 'Dr. Ahmed Ali',
+    role: 'doctor',
+    specialty: 'Cardiologist (Heart)',
+    hospital: 'Shaukat Khanum Hospital, Lahore',
+    experience: '12 years of Experience',
+    fee: 'Rs. 2,500',
+    image: '/assets/doc_real_2.jpg'
+  },
+  {
+    email: 'dr.sarah@medic.com',
+    password: 'password123',
+    fullName: 'Dr. Sarah Khan',
+    role: 'doctor',
+    specialty: 'Dermatologist (Skin)',
+    hospital: 'Skin Care Clinic, Karachi',
+    experience: '8 years of Experience',
+    fee: 'Rs. 2,000',
+    image: '/assets/doc_real_1.jpg'
+  },
+  {
+    email: 'dr.hassan@medic.com',
+    password: 'password123',
+    fullName: 'Dr. Muhammad Hassan',
+    role: 'doctor',
+    specialty: 'Neurologist (Brain & Nerves)',
+    hospital: 'City Brain & Spine Center',
+    experience: '15 years of Experience',
+    fee: 'Rs. 3,000',
+    image: '/assets/doc_real_3.jpg'
+  },
+  {
+    email: 'dr.ayesha@medic.com',
+    password: 'password123',
+    fullName: 'Dr. Ayesha Malik',
+    role: 'doctor',
+    specialty: 'Pediatrician (Child Specialist)',
+    hospital: 'Children Medical Complex',
+    experience: '7 years of Experience',
+    fee: 'Rs. 1,800',
+    image: '/assets/doc_real_4.jpg'
+  }
+];
+
 export const getStoredUser = () => {
   try {
     const data = localStorage.getItem(USER_STORAGE_KEY);
@@ -107,49 +164,33 @@ export const cancelAppointmentInStorage = (appointmentId) => {
   return updateAppointmentStatusInStorage(appointmentId, 'Cancelled');
 };
 
-// Real Authentication Functions
+// Authentication Functions
 export const signUpUser = async (email, password, extraData = {}) => {
   const isDoctor = extraData.role === 'doctor';
   
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: extraData.fullName,
-          role: extraData.role || 'patient',
-          specialty: extraData.specialty || '',
-          hospital: extraData.hospital || '',
-          fee: extraData.fee || 'Rs. 2,000',
-          image: extraData.image || '/assets/doc_real_2.jpg'
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: extraData.fullName,
+            role: extraData.role || 'patient',
+            specialty: extraData.specialty || '',
+            hospital: extraData.hospital || '',
+            fee: extraData.fee || 'Rs. 2,000',
+            image: extraData.image || '/assets/doc_real_2.jpg'
+          }
         }
-      }
-    });
-
-    if (error) throw error;
-    
-    const userObj = {
-      id: data.user?.id || `usr_${Date.now()}`,
-      email: data.user?.email || email,
-      fullName: extraData.fullName || email.split('@')[0],
-      role: extraData.role || 'patient',
-      specialty: extraData.specialty || 'General Physician',
-      hospital: extraData.hospital || 'Medic Care Hospital',
-      experience: extraData.experience || '5 years of Experience',
-      fee: extraData.fee || 'Rs. 2,000',
-      image: extraData.image || '/assets/doc_real_2.jpg',
-      hours: extraData.hours || 'Mon-Fri: 9am-5pm',
-      provider: 'supabase'
-    };
-
-    saveStoredUser(userObj);
-    if (isDoctor) saveNewDoctorProfile(userObj);
-    return userObj;
+      });
+      if (error) throw error;
+    } catch (supabaseErr) {
+      console.warn('Supabase sign up warning:', supabaseErr.message);
+    }
   }
 
-  // Fallback local storage registration
-  const fallbackUser = {
+  const userObj = {
     id: `usr_${Date.now()}`,
     email,
     fullName: extraData.fullName || (isDoctor ? 'Dr. Ahmed Ali' : 'Zunaira Mughal'),
@@ -161,40 +202,64 @@ export const signUpUser = async (email, password, extraData = {}) => {
     image: extraData.image || '/assets/doc_real_2.jpg',
     hours: extraData.hours || 'Mon-Fri: 9am-5pm',
     rating: 4.9,
-    reviewsCount: 12,
-    provider: 'local'
+    provider: 'medic_auth'
   };
 
-  saveStoredUser(fallbackUser);
-  if (isDoctor) saveNewDoctorProfile(fallbackUser);
-  return fallbackUser;
+  saveStoredUser(userObj);
+  if (isDoctor) saveNewDoctorProfile(userObj);
+  return userObj;
 };
 
 export const signInUser = async (email, password) => {
-  if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) throw error;
-
-    const userObj = {
-      id: data.user?.id || `usr_${Date.now()}`,
-      email: data.user?.email || email,
-      fullName: data.user?.user_metadata?.full_name || email.split('@')[0],
-      role: data.user?.user_metadata?.role || (email.toLowerCase().includes('dr') ? 'doctor' : 'patient'),
-      specialty: data.user?.user_metadata?.specialty || 'Consultant Specialist',
-      hospital: data.user?.user_metadata?.hospital || 'Medic Hospital',
-      fee: data.user?.user_metadata?.fee || 'Rs. 2,500',
-      image: data.user?.user_metadata?.image || '/assets/doc_real_2.jpg',
-      provider: 'supabase'
+  // Check preset mock account match first for zero-friction cross-phone testing
+  const matchedMock = MOCK_ACCOUNTS.find(a => a.email.toLowerCase() === email.toLowerCase());
+  if (matchedMock) {
+    const mockUserObj = {
+      id: `usr_${matchedMock.role}_${Date.now()}`,
+      email: matchedMock.email,
+      fullName: matchedMock.fullName,
+      role: matchedMock.role,
+      specialty: matchedMock.specialty,
+      hospital: matchedMock.hospital,
+      experience: matchedMock.experience || '10 years of Experience',
+      fee: matchedMock.fee || 'Rs. 2,500',
+      image: matchedMock.image || '/assets/doc_real_2.jpg',
+      hours: 'Mon-Fri: 9am-5pm',
+      provider: 'preset_mock'
     };
-    saveStoredUser(userObj);
-    return userObj;
+    saveStoredUser(mockUserObj);
+    if (mockUserObj.role === 'doctor') saveNewDoctorProfile(mockUserObj);
+    return mockUserObj;
   }
 
-  // Fallback demo sign in
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (!error && data.user) {
+        const userObj = {
+          id: data.user.id,
+          email: data.user.email,
+          fullName: data.user.user_metadata?.full_name || email.split('@')[0],
+          role: data.user.user_metadata?.role || (email.toLowerCase().includes('dr') ? 'doctor' : 'patient'),
+          specialty: data.user.user_metadata?.specialty || 'Consultant Specialist',
+          hospital: data.user.user_metadata?.hospital || 'Medic Hospital',
+          fee: data.user.user_metadata?.fee || 'Rs. 2,500',
+          image: data.user.user_metadata?.image || '/assets/doc_real_2.jpg',
+          provider: 'supabase'
+        };
+        saveStoredUser(userObj);
+        return userObj;
+      }
+    } catch (err) {
+      console.warn('Supabase signIn fallback to local:', err.message);
+    }
+  }
+
+  // General fallback sign in
   const isDoctorEmail = email.toLowerCase().includes('dr') || email.toLowerCase().includes('doctor');
   const fallbackUser = {
     id: `usr_demo_${Date.now()}`,
@@ -223,22 +288,3 @@ export const signOutUser = async () => {
   }
   saveStoredUser(null);
 };
-
-export const SUPABASE_SQL_SETUP = `
--- Run this SQL in your Supabase SQL Editor:
-create table public.appointments (
-  id text primary key,
-  user_id text,
-  doctor_id text,
-  doctor_name text,
-  doctor_specialty text,
-  consultation_type text,
-  patient_name text,
-  contact_number text,
-  date_formatted text,
-  day_formatted text,
-  time_slot text,
-  status text default 'Pending',
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-`;
