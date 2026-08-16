@@ -134,7 +134,7 @@ export default function AppointmentDetailScreen({ appointment, onBack, onCancell
           background: #f5f9fc;
           display: flex;
           flex-direction: column;
-          z-index: 40;
+          z-index: 100;
           overflow-y: auto;
         }
 

@@ -174,7 +174,7 @@ export default function BookingScreen({ doctor, user, onBack, onBookingSuccess }
           background: #ffffff;
           display: flex;
           flex-direction: column;
-          z-index: 40;
+          z-index: 100;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
         }

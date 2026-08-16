@@ -52,7 +52,7 @@ export default function BrowseSpecialtiesScreen({ onBack, onSelectSpecialty }) {
           background: #f5f9fc;
           display: flex;
           flex-direction: column;
-          z-index: 30;
+          z-index: 100;
           overflow-y: auto;
           padding-bottom: 80px;
         }

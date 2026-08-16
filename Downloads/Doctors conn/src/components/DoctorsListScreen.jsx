@@ -88,7 +88,6 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
             placeholder="Search name, hospital, city, fee (e.g. Sarah Karachi)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            autoFocus
           />
           {searchTerm && (
             <button className="clear-search-btn" onClick={() => setSearchTerm('')}>×</button>
@@ -241,7 +240,7 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           background: #f5f9fc;
           display: flex;
           flex-direction: column;
-          z-index: 30;
+          z-index: 10;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
           padding-bottom: 90px;
