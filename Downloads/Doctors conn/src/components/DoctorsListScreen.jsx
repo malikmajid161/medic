@@ -1,62 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Star, ChevronRight, MapPin, Clock, Calendar, CheckCircle2, Filter } from 'lucide-react';
+import { ArrowLeft, Search, Star, ChevronRight, MapPin, Clock, Filter, Check, SlidersHorizontal } from 'lucide-react';
 import { SPECIALTIES } from '../data/doctorsData';
 import { getStoredDoctors } from '../lib/supabase';
+
+// Multi-Keyword, Case-Insensitive Intelligent Doctor Search Engine
+export const searchDoctorsEngine = (doctors, query = '', specialtyId = 'all', feeRange = 'all', topRatedOnly = false) => {
+  if (!doctors || !Array.isArray(doctors)) return [];
+
+  // Normalize search query
+  const cleanQuery = query.trim().toLowerCase().replace(/^(dr\.\s*|dr\s*)/i, '');
+  const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+
+  return doctors.filter((doc) => {
+    // 1. Specialty Filter
+    if (specialtyId !== 'all' && doc.specialtyId !== specialtyId) {
+      return false;
+    }
+
+    // 2. Top Rated Filter
+    if (topRatedOnly && (doc.rating || 0) < 4.8) {
+      return false;
+    }
+
+    // 3. Fee Filter
+    if (feeRange !== 'all') {
+      const feeNum = parseInt((doc.fee || '').replace(/[^0-9]/g, '')) || 2000;
+      if (feeRange === 'under2k' && feeNum > 2000) return false;
+      if (feeRange === '2kto3k' && (feeNum < 2000 || feeNum > 3000)) return false;
+      if (feeRange === 'above3k' && feeNum < 3000) return false;
+    }
+
+    // 4. Token Matching across all doctor fields
+    if (queryTokens.length === 0) return true;
+
+    const searchableText = [
+      doc.name || '',
+      doc.specialty || '',
+      doc.hospital || '',
+      doc.about || '',
+      doc.fee || '',
+      doc.hours || '',
+      doc.experience || ''
+    ].join(' ').toLowerCase();
+
+    return queryTokens.every((token) => searchableText.includes(token));
+  });
+};
 
 export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpecialtyId }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecFilter, setSelectedSpecFilter] = useState(initialSpecialtyId || 'all');
+  const [feeFilter, setFeeFilter] = useState('all');
+  const [topRatedOnly, setTopRatedOnly] = useState(false);
   const [doctorsList, setDoctorsList] = useState([]);
 
   useEffect(() => {
     setDoctorsList(getStoredDoctors());
   }, []);
 
-  const filteredDoctors = doctorsList.filter((doc) => {
-    const matchesSearch =
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.hospital.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSpec = selectedSpecFilter === 'all' || doc.specialtyId === selectedSpecFilter;
-
-    return matchesSearch && matchesSpec;
-  });
+  const filteredDoctors = searchDoctorsEngine(
+    doctorsList,
+    searchTerm,
+    selectedSpecFilter,
+    feeFilter,
+    topRatedOnly
+  );
 
   return (
     <div className="doctors-list-screen animate-fade-in">
-      {/* Top Sticky Header */}
+      {/* Top Header */}
       <div className="doctors-header">
         <button className="back-btn" onClick={onBack}>
           <ArrowLeft size={20} color="#ffffff" />
         </button>
-        <h2 className="header-title">Find Specialist Doctor</h2>
-        <div className="header-badge-count">{filteredDoctors.length} Available</div>
+        <h2 className="header-title">Smart Doctor Search</h2>
+        <div className="header-badge-count">{filteredDoctors.length} Found</div>
       </div>
 
-      {/* Filter / Search Bar */}
+      {/* Search & Advanced Filters Bar */}
       <div className="filter-sticky-bar">
+        {/* Fast Real-Time Search Box */}
         <div className="search-input-box">
-          <Search size={16} color="#0b5d71" />
+          <Search size={18} color="#0b5d71" className="search-icon-anim" />
           <input
             type="text"
             className="search-input"
-            placeholder="Search doctor, hospital, or specialty..."
+            placeholder="Search name, hospital, city, fee (e.g. Sarah Karachi)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
           />
           {searchTerm && (
             <button className="clear-search-btn" onClick={() => setSearchTerm('')}>×</button>
           )}
         </div>
 
-        {/* Filter Category Chips */}
+        {/* Quick Filter Bar */}
+        <div className="secondary-filters-row">
+          <button
+            className={`quick-pill ${topRatedOnly ? 'active' : ''}`}
+            onClick={() => setTopRatedOnly(!topRatedOnly)}
+          >
+            <Star size={13} fill={topRatedOnly ? '#ffffff' : '#f59e0b'} color={topRatedOnly ? '#ffffff' : '#f59e0b'} />
+            <span>Top Rated (4.8+)</span>
+          </button>
+
+          <select
+            className="fee-select-pill"
+            value={feeFilter}
+            onChange={(e) => setFeeFilter(e.target.value)}
+          >
+            <option value="all">Any Fee</option>
+            <option value="under2k">Under Rs. 2,000</option>
+            <option value="2kto3k">Rs. 2,000 - Rs. 3,000</option>
+            <option value="above3k">Above Rs. 3,000</option>
+          </select>
+        </div>
+
+        {/* Horizontal Specialty Chips */}
         <div className="spec-filter-scroll">
           <button
             className={`filter-chip ${selectedSpecFilter === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedSpecFilter('all')}
           >
-            All Doctors
+            All Specialties
           </button>
           {SPECIALTIES.map((spec) => (
             <button
@@ -70,13 +137,46 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
         </div>
       </div>
 
-      {/* Doctors List */}
+      {/* Results Header Summary */}
+      <div className="results-summary-row">
+        <span className="results-count-text">
+          {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Specialist' : 'Specialists'} Matched
+        </span>
+        {(searchTerm || selectedSpecFilter !== 'all' || feeFilter !== 'all' || topRatedOnly) && (
+          <button
+            className="reset-filters-btn"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedSpecFilter('all');
+              setFeeFilter('all');
+              setTopRatedOnly(false);
+            }}
+          >
+            Reset Filters
+          </button>
+        )}
+      </div>
+
+      {/* Doctor Cards List */}
       <div className="doctors-cards-list">
         {filteredDoctors.length === 0 ? (
           <div className="no-results-card">
-            <Filter size={32} color="#94a3b8" />
-            <p className="no-results-title">No specialists found</p>
-            <p className="no-results-sub">Try searching with a different specialty or doctor name.</p>
+            <Filter size={36} color="#94a3b8" />
+            <h4 className="no-results-title">No matching doctors found</h4>
+            <p className="no-results-sub">
+              Try searching with a broader keyword or reset your filter criteria.
+            </p>
+            <button
+              className="reset-search-btn"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedSpecFilter('all');
+                setFeeFilter('all');
+                setTopRatedOnly(false);
+              }}
+            >
+              Clear All Filters
+            </button>
           </div>
         ) : (
           filteredDoctors.map((doc) => (
@@ -88,7 +188,7 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
               <div className="doc-card-top-row">
                 <div className="doc-avatar-container">
                   <img src={doc.image} alt={doc.name} className="doc-avatar-img" />
-                  <span className="online-indicator-dot" title="Available for booking"></span>
+                  <span className="online-indicator-dot" title="Available Today"></span>
                 </div>
 
                 <div className="doc-main-info">
@@ -101,7 +201,7 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
                   </div>
 
                   <p className="doc-spec-sub">{doc.specialty}</p>
-                  <p className="doc-exp-text">✨ {doc.experience || '8 years experience'}</p>
+                  <p className="doc-exp-text">✨ {doc.experience || '8 years exp'}</p>
                 </div>
               </div>
 
@@ -115,7 +215,7 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
                   </div>
                   <div className="footer-info-row">
                     <Clock size={13} color="#0b5d71" />
-                    <span>{doc.hours || 'Mon-Fri: 9am-5pm'}</span>
+                    <span>Fee: <strong style={{ color: '#0b5d71' }}>{doc.fee || 'Rs. 2,000'}</strong></span>
                   </div>
                 </div>
 
@@ -170,30 +270,21 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           align-items: center;
           justify-content: center;
           border-radius: 50%;
-          transition: background 0.2s;
         }
 
-        .back-btn:active {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .header-title {
-          font-size: 16.5px;
-          font-weight: 700;
-          color: #ffffff;
-        }
+        .header-title { font-size: 16.5px; font-weight: 700; color: #ffffff; }
 
         .header-badge-count {
           font-size: 11px;
-          font-weight: 700;
-          background: rgba(255, 255, 255, 0.2);
+          font-weight: 800;
+          background: rgba(255, 255, 255, 0.25);
           color: #ffffff;
           padding: 4px 10px;
           border-radius: 12px;
         }
 
         .filter-sticky-bar {
-          padding: 12px 16px;
+          padding: 12px 16px 8px;
           background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
           display: flex;
@@ -202,16 +293,24 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           position: sticky;
           top: 60px;
           z-index: 9;
+          box-shadow: 0 4px 12px rgba(11, 93, 113, 0.03);
         }
 
         .search-input-box {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           background: #f1f5f9;
           padding: 10px 14px;
-          border-radius: 12px;
-          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          border: 1.5px solid #e2e8f0;
+          transition: border-color 0.2s;
+        }
+
+        .search-input-box:focus-within {
+          border-color: #0b5d71;
+          background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(11, 93, 113, 0.1);
         }
 
         .search-input {
@@ -221,15 +320,61 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           width: 100%;
           font-size: 13.5px;
           color: #0f172a;
+          font-weight: 500;
         }
 
         .clear-search-btn {
-          background: none;
+          background: #cbd5e1;
           border: none;
-          font-size: 18px;
-          color: #94a3b8;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          font-size: 14px;
+          color: #ffffff;
           cursor: pointer;
-          padding: 0 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .secondary-filters-row {
+          display: flex;
+          gap: 8px;
+        }
+
+        .quick-pill {
+          height: 34px;
+          padding: 0 12px;
+          border-radius: 18px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          font-size: 12px;
+          font-weight: 700;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .quick-pill.active {
+          background: #f59e0b;
+          color: #ffffff;
+          border-color: #f59e0b;
+        }
+
+        .fee-select-pill {
+          height: 34px;
+          padding: 0 12px;
+          border-radius: 18px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          font-size: 12px;
+          font-weight: 700;
+          color: #0b5d71;
+          outline: none;
+          cursor: pointer;
         }
 
         .spec-filter-scroll {
@@ -262,8 +407,30 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           box-shadow: 0 2px 8px rgba(11, 93, 113, 0.2);
         }
 
+        .results-summary-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 18px 2px;
+        }
+
+        .results-count-text {
+          font-size: 12px;
+          font-weight: 700;
+          color: #64748b;
+        }
+
+        .reset-filters-btn {
+          background: none;
+          border: none;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #be123c;
+          cursor: pointer;
+        }
+
         .doctors-cards-list {
-          padding: 16px;
+          padding: 12px 16px 20px;
           display: flex;
           flex-direction: column;
           gap: 14px;
@@ -382,7 +549,6 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
           gap: 6px;
           font-size: 11.5px;
           color: #64748b;
-          font-weight: 500;
         }
 
         .card-book-action-btn {
@@ -399,7 +565,7 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
 
         .no-results-card {
           text-align: center;
-          padding: 40px 20px;
+          padding: 36px 20px;
           background: #ffffff;
           border-radius: 18px;
           border: 1px solid #e2e8f0;
@@ -418,6 +584,18 @@ export default function DoctorsListScreen({ onBack, onSelectDoctor, initialSpeci
         .no-results-sub {
           font-size: 12px;
           color: #94a3b8;
+          margin-bottom: 16px;
+        }
+
+        .reset-search-btn {
+          background: #0b5d71;
+          color: #ffffff;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 12.5px;
+          font-weight: 700;
+          cursor: pointer;
         }
       `}</style>
     </div>
