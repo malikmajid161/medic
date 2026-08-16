@@ -21,18 +21,27 @@ def generate_icons():
         "mipmap-xxxhdpi": 192,
     }
 
-    # Generate standard icons
+    # Generate standard icons with padding so they fit inside Android's circular mask
     for folder, size in sizes.items():
         folder_path = os.path.join(res_dir, folder)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         
-        resized = img.resize((size, size), Image.Resampling.LANCZOS)
+        # Create a transparent canvas of the target size
+        canvas = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+        
+        # Logo should take up ~70% of the canvas to avoid being cropped by circles
+        logo_size = int(size * 0.7)
+        resized_logo = img.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
+        
+        # Center the logo on the canvas
+        offset = ((size - logo_size) // 2, (size - logo_size) // 2)
+        canvas.paste(resized_logo, offset, mask=resized_logo if 'A' in img.getbands() else None)
         
         # Save ic_launcher and round
-        resized.save(os.path.join(folder_path, "ic_launcher.png"))
-        resized.save(os.path.join(folder_path, "ic_launcher_round.png"))
-        print(f"Generated {size}x{size} for {folder}")
+        canvas.save(os.path.join(folder_path, "ic_launcher.png"))
+        canvas.save(os.path.join(folder_path, "ic_launcher_round.png"))
+        print(f"Generated {size}x{size} (padded) for {folder}")
 
     # Generate Adaptive Icon Foreground (432x432, logo scaled to 288x288 in center)
     anydpi_folder = os.path.join(res_dir, "mipmap-anydpi-v26")
