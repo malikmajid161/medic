@@ -27,11 +27,11 @@ def generate_icons():
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         
-        # Create a transparent canvas of the target size
-        canvas = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+        # Create a SOLID WHITE canvas of the target size (prevents black background rendering on Android)
+        canvas = Image.new("RGBA", (size, size), (255, 255, 255, 255))
         
-        # Logo should take up ~70% of the canvas to avoid being cropped by circles
-        logo_size = int(size * 0.7)
+        # Logo should take up ~65% of the canvas to avoid being cropped by circles
+        logo_size = int(size * 0.65)
         resized_logo = img.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
         
         # Center the logo on the canvas
@@ -48,8 +48,8 @@ def generate_icons():
     if not os.path.exists(anydpi_folder):
         os.makedirs(anydpi_folder)
     
-    # Create 432x432 transparent canvas
-    adaptive_bg = Image.new("RGBA", (432, 432), (255, 255, 255, 0))
+    # Create 432x432 SOLID WHITE canvas
+    adaptive_bg = Image.new("RGBA", (432, 432), (255, 255, 255, 255))
     
     # Scale logo to 288x288
     logo_scaled = img.resize((288, 288), Image.Resampling.LANCZOS)
@@ -59,7 +59,21 @@ def generate_icons():
     adaptive_bg.paste(logo_scaled, offset, mask=logo_scaled)
     
     adaptive_bg.save(os.path.join(anydpi_folder, "ic_launcher_foreground.png"))
-    print("Generated adaptive icon foreground 432x432 for anydpi-v26")
+    
+    # Generate the XML files
+    xml_content = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+</adaptive-icon>"""
+
+    with open(os.path.join(anydpi_folder, "ic_launcher.xml"), "w") as f:
+        f.write(xml_content)
+        
+    with open(os.path.join(anydpi_folder, "ic_launcher_round.xml"), "w") as f:
+        f.write(xml_content)
+        
+    print("Generated adaptive icon foreground and XMLs for anydpi-v26")
 
 if __name__ == "__main__":
     generate_icons()
