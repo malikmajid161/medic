@@ -1,9 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Smartphone, Monitor, Wifi, Battery, Signal } from 'lucide-react';
 
 export default function MobileFrame({ children }) {
   const [isFramed, setIsFramed] = useState(true);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
 
+  useEffect(() => {
+    const checkScreen = () => {
+      // Automatically detect mobile viewport or touch screens
+      if (window.innerWidth <= 768 || window.isNative || window.Capacitor?.isNativePlatform()) {
+        setIsMobileDevice(true);
+      } else {
+        setIsMobileDevice(false);
+      }
+    };
+
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
+
+  // If on actual mobile device or APK build -> return pure full-screen application
+  if (isMobileDevice) {
+    return (
+      <div className="native-mobile-app-container">
+        {children}
+        <style>{`
+          .native-mobile-app-container {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: #ffffff;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Desktop view with optional Phone Bezel toggle
   return (
     <div className={`app-viewport-wrapper ${isFramed ? 'is-framed-mode' : 'full-screen-mode'}`}>
       {/* Top Device Toggle Bar for Desktop */}
@@ -15,24 +52,26 @@ export default function MobileFrame({ children }) {
           title="Toggle Mobile Bezel / Full Width"
         >
           {isFramed ? <Monitor size={15} /> : <Smartphone size={15} />}
-          <span>{isFramed ? 'Full View' : 'Phone View'}</span>
+          <span>{isFramed ? 'Full Width' : 'Phone Frame'}</span>
         </button>
       </div>
 
       {/* Phone Shell */}
       <div className="phone-device-shell">
-        {/* Phone Notch & Status Bar */}
-        <div className="phone-status-bar">
-          <span className="status-time">9:41</span>
-          <div className="phone-notch">
-            <div className="camera-lens"></div>
+        {/* Mockup Status Bar (only shown on desktop framed mode) */}
+        {isFramed && (
+          <div className="phone-status-bar">
+            <span className="status-time">9:41</span>
+            <div className="phone-notch">
+              <div className="camera-lens"></div>
+            </div>
+            <div className="status-icons">
+              <Signal size={12} />
+              <Wifi size={12} />
+              <Battery size={13} />
+            </div>
           </div>
-          <div className="status-icons">
-            <Signal size={12} />
-            <Wifi size={12} />
-            <Battery size={13} />
-          </div>
-        </div>
+        )}
 
         {/* Screen Viewport */}
         <div className="phone-screen-content">
@@ -89,7 +128,7 @@ export default function MobileFrame({ children }) {
           background: #334155;
         }
 
-        /* Framed Phone View */
+        /* Framed Phone View for Desktop */
         .is-framed-mode .phone-device-shell {
           width: 390px;
           height: 820px;
@@ -102,7 +141,7 @@ export default function MobileFrame({ children }) {
           overflow: hidden;
         }
 
-        /* Full Screen Mobile View */
+        /* Full Screen Desktop View */
         .full-screen-mode .phone-device-shell {
           width: 100%;
           max-width: 460px;
@@ -162,16 +201,18 @@ export default function MobileFrame({ children }) {
           background: #f5f9fc;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
           .app-viewport-wrapper {
             padding: 0;
+            background: #ffffff;
           }
-          .view-mode-toggle {
-            display: none;
+          .view-mode-toggle, .phone-status-bar {
+            display: none !important;
           }
           .phone-device-shell {
             width: 100vw !important;
             height: 100vh !important;
+            height: 100dvh !important;
             border-radius: 0 !important;
             box-shadow: none !important;
           }
