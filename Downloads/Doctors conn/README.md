@@ -25,22 +25,6 @@ A high-performance, cross-platform React & Capacitor healthcare application desi
 
 ---
 
-## 🔑 Quick Demo Credentials (1-Tap Test on 2 Phones)
-
-You can log in on **Phone A** as a Patient and **Phone B** as a Doctor to test real-time booking interactions:
-
-| Role | Doctor / Patient Name | Email | Password |
-|---|---|---|---|
-| 👤 **Patient** | Zunaira Mughal | `patient@medic.com` | `password123` |
-| 👨‍⚕️ **Doctor (Cardiologist)** | Dr. Ahmed Ali | `dr.ahmed@medic.com` | `password123` |
-| 👩‍⚕️ **Doctor (Dermatologist)** | Dr. Sarah Khan | `dr.sarah@medic.com` | `password123` |
-| 👨‍⚕️ **Doctor (Neurologist)** | Dr. Muhammad Hassan | `dr.hassan@medic.com` | `password123` |
-| 👩‍⚕️ **Doctor (Pediatrician)** | Dr. Ayesha Malik | `dr.ayesha@medic.com` | `password123` |
-
-> 💡 **Quick Feature:** In the login screen, tap any chip in the **"Quick Demo Logins (1-Tap Test)"** bar to auto-fill credentials instantly!
-
----
-
 ## 🛠️ Technology Stack
 - **Frontend Framework**: React 19 + Vite 8
 - **Design System**: Vanilla CSS with modern Glassmorphism, HSL custom color tokens, and micro-animations
