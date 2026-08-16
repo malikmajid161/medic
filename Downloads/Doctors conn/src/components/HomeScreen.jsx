@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Star, ArrowRight, Activity, Wind, Thermometer, Bug, Droplet, ShieldAlert, Heart, Calendar, Clock, Check, X, User, CheckCircle2, ShieldCheck, Stethoscope } from 'lucide-react';
+import { Search, Bell, Star, ArrowRight, Activity, Wind, Thermometer, Bug, Droplet, ShieldAlert, Heart, Calendar, Clock, Check, X, User, CheckCircle2, ShieldCheck, Stethoscope, TrendingUp, Users, Video, CalendarDays, Wallet } from 'lucide-react';
 import { SPECIALTIES, WELLNESS_INSIGHT } from '../data/doctorsData';
 import { getStoredDoctors, getStoredAppointments, updateAppointmentStatusInStorage } from '../lib/supabase';
 
@@ -93,6 +93,29 @@ export default function HomeScreen({ user, onSelectDoctor, onViewAllSpecialties,
                 <span className="stat-num">{acceptedVisits.length}</span>
                 <span className="stat-label">Accepted</span>
               </div>
+            </div>
+          </div>
+
+          {/* Quick Actions (Doctor Professional Portal) */}
+          <div className="section-container" style={{ marginTop: '16px' }}>
+            <h3 className="section-title" style={{marginBottom: '12px'}}>Practice Management</h3>
+            <div className="doc-quick-actions-grid">
+              <button className="doc-action-btn">
+                <div className="doc-action-icon blue"><CalendarDays size={20} /></div>
+                <span>Schedule</span>
+              </button>
+              <button className="doc-action-btn">
+                <div className="doc-action-icon green"><Video size={20} /></div>
+                <span>Telehealth</span>
+              </button>
+              <button className="doc-action-btn">
+                <div className="doc-action-icon purple"><Users size={20} /></div>
+                <span>My Patients</span>
+              </button>
+              <button className="doc-action-btn">
+                <div className="doc-action-icon orange"><Wallet size={20} /></div>
+                <span>Earnings</span>
+              </button>
             </div>
           </div>
 
@@ -427,6 +450,51 @@ export default function HomeScreen({ user, onSelectDoctor, onViewAllSpecialties,
           opacity: 0.85;
           margin-top: 2px;
         }
+
+        /* Quick Actions Grid */
+        .doc-quick-actions-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+
+        .doc-action-btn {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 12px 6px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(11, 93, 113, 0.03);
+          transition: transform 0.2s;
+        }
+
+        .doc-action-btn:active {
+          transform: scale(0.95);
+        }
+
+        .doc-action-btn span {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #334155;
+        }
+
+        .doc-action-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .doc-action-icon.blue { background: #e0f2fe; color: #0284c7; }
+        .doc-action-icon.green { background: #dcfce7; color: #16a34a; }
+        .doc-action-icon.purple { background: #f3e8ff; color: #9333ea; }
+        .doc-action-icon.orange { background: #ffedd5; color: #ea580c; }
 
         /* Requests List */
         .requests-list-flex {

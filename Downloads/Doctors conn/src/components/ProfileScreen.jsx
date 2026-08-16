@@ -207,13 +207,48 @@ export default function ProfileScreen({ user, onLogout }) {
         </div>
       </div>
 
+      {/* Demo Switch Role Action */}
+      <button 
+        className="switch-role-btn" 
+        onClick={() => {
+          const newUser = isDoctor 
+            ? { fullName: 'Zunaira Mughal', email: 'patient@medic.com', role: 'patient' }
+            : { fullName: 'Dr. Ahmed Ali', email: 'dr.ahmed@medic.com', role: 'doctor', specialty: 'Cardiologist', hospital: 'Medic Hospital' };
+          saveStoredUser(newUser);
+          window.location.reload();
+        }}
+      >
+        <User size={18} />
+        <span>Switch to {isDoctor ? 'Patient Portal' : 'Doctor Portal'} (Demo)</span>
+      </button>
+
       {/* Logout Action */}
       <button className="logout-btn" onClick={onLogout}>
         <LogOut size={18} />
-        <span>Sign Out</span>
+        <span>Reset App (Logout)</span>
       </button>
 
       <style>{`
+        .switch-role-btn {
+          width: 100%;
+          height: 48px;
+          background: #e6f3f7;
+          color: #0b5d71;
+          border: 1px solid #bae6fd;
+          border-radius: 14px;
+          font-weight: 700;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          margin-bottom: 12px;
+          transition: all 0.2s;
+        }
+        .switch-role-btn:active {
+          transform: scale(0.98);
+        }
         .profile-screen {
           position: absolute;
           inset: 0;

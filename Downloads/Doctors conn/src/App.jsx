@@ -64,14 +64,22 @@ export default function App() {
     }
   }, []);
 
-  // Splash finished -> check if user is already logged in
+  // Splash finished -> check if user is already logged in or Auto-Login for demo
   const handleSplashFinish = () => {
     const existingUser = getStoredUser();
     if (existingUser) {
       setUser(existingUser);
       setCurrentStage('main');
     } else {
-      setCurrentStage('onboarding');
+      // Bypass login and open dashboard directly as Patient
+      const demoUser = {
+        fullName: 'Zunaira Mughal',
+        email: 'patient@medic.com',
+        role: 'patient',
+        provider: 'local'
+      };
+      setUser(demoUser);
+      setCurrentStage('main');
     }
   };
 
