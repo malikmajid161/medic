@@ -140,21 +140,40 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         </p>
 
         {mode === 'login' && (
-          <div className="quick-demo-section">
-            <span className="demo-section-label"><Sparkles size={13} color="#0b5d71" /> Quick Login Profiles:</span>
-            <div className="demo-chips-row">
-              {MOCK_ACCOUNTS.map((acc) => (
-                <button
-                  type="button"
-                  key={acc.email}
-                  className={`demo-chip-btn ${email === acc.email ? 'active' : ''}`}
-                  onClick={() => handleQuickDemoSelect(acc)}
-                >
-                  <span className="chip-role-tag">{acc.role === 'doctor' ? '👨‍⚕️ Doctor' : '👤 Patient'}</span>
-                  <span className="chip-name">{acc.fullName}</span>
-                </button>
-              ))}
-            </div>
+          <div className="login-role-cards">
+            <button 
+              type="button"
+              className={`role-card ${role === 'patient' ? 'active' : ''}`}
+              onClick={() => {
+                setRole('patient');
+                handleQuickDemoSelect(MOCK_ACCOUNTS.find(a => a.role === 'patient'));
+              }}
+            >
+              <div className={`role-icon-box ${role === 'patient' ? 'active-icon' : ''}`}>
+                <User size={24} />
+              </div>
+              <div className="role-card-text">
+                <span className="role-title">Patient Login</span>
+                <span className="role-desc">Book & track visits</span>
+              </div>
+            </button>
+
+            <button 
+              type="button"
+              className={`role-card ${role === 'doctor' ? 'active' : ''}`}
+              onClick={() => {
+                setRole('doctor');
+                handleQuickDemoSelect(MOCK_ACCOUNTS.find(a => a.role === 'doctor'));
+              }}
+            >
+              <div className={`role-icon-box ${role === 'doctor' ? 'active-icon' : ''}`}>
+                <Stethoscope size={24} />
+              </div>
+              <div className="role-card-text">
+                <span className="role-title">Doctor Portal</span>
+                <span className="role-desc">Manage your practice</span>
+              </div>
+            </button>
           </div>
         )}
 
@@ -480,66 +499,70 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           margin-bottom: 14px;
         }
 
-        .quick-demo-section {
-          background: #f0f7f9;
-          border: 1px solid #bae6fd;
-          padding: 10px 12px;
-          border-radius: 14px;
-          margin-bottom: 16px;
+        .login-role-cards {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-bottom: 20px;
         }
 
-        .demo-section-label {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11.5px;
-          font-weight: 700;
-          color: #0b5d71;
-          margin-bottom: 8px;
-        }
-
-        .demo-chips-row {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
-          padding-bottom: 2px;
-        }
-
-        .demo-chip-btn {
-          flex: 0 0 auto;
+        .role-card {
+          background: #ffffff;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 16px 12px;
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
-          padding: 6px 12px;
-          border-radius: 10px;
-          border: 1px solid #cbd5e1;
-          background: #ffffff;
+          align-items: center;
+          text-align: center;
           cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .role-card:active {
+          transform: scale(0.96);
+        }
+
+        .role-card.active {
+          border-color: #0b5d71;
+          background: #f0f7f9;
+          box-shadow: 0 4px 14px rgba(11, 93, 113, 0.12);
+        }
+
+        .role-icon-box {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          background: #f1f5f9;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 12px;
           transition: all 0.2s;
         }
 
-        .demo-chip-btn.active {
+        .role-icon-box.active-icon {
           background: #0b5d71;
-          border-color: #0b5d71;
-        }
-
-        .demo-chip-btn.active .chip-role-tag,
-        .demo-chip-btn.active .chip-name {
           color: #ffffff;
+          box-shadow: 0 4px 10px rgba(11, 93, 113, 0.3);
         }
 
-        .chip-role-tag {
-          font-size: 10px;
-          font-weight: 700;
-          color: #0284c7;
+        .role-card-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
 
-        .chip-name {
-          font-size: 12px;
+        .role-card .role-title {
+          font-size: 14px;
           font-weight: 800;
           color: #0f172a;
+        }
+
+        .role-card .role-desc {
+          font-size: 11px;
+          color: #64748b;
         }
 
         .role-selector-bar {
