@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Medic</string>
+    <string name="title_activity_main">Medic</string>
+    <string name="package_name">com.medic.doctorappointment</string>
+    <string name="custom_url_scheme">com.medic.doctorappointment</string>
+</resources>
