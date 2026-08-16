@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MobileFrame from './components/MobileFrame';
 import SplashScreen from './components/SplashScreen';
 import OnboardingScreen from './components/OnboardingScreen';
@@ -11,6 +11,7 @@ import AppointmentDetailScreen from './components/AppointmentDetailScreen';
 import MyVisitsScreen from './components/MyVisitsScreen';
 import ProfileScreen from './components/ProfileScreen';
 import BottomNav from './components/BottomNav';
+import { getStoredUser, signOutUser, supabase, isSupabaseConfigured } from './lib/supabase';
 
 export default function App() {
   // Screen state navigation: 'splash' -> 'onboarding' -> 'auth' -> 'main'
@@ -20,8 +21,8 @@ export default function App() {
   // Main app tab state: 'home', 'visits', 'doctors', 'profile'
   const [activeTab, setActiveTab] = useState('home');
 
-  // User state
-  const [user, setUser] = useState({
+  // User state initialized from persistent storage
+  const [user, setUser] = useState(() => getStoredUser() || {
     fullName: 'Zunaira Mughal',
     email: 'zunaira@gmail.com'
   });
@@ -33,9 +34,45 @@ export default function App() {
   const [isDoctorsListOpen, setIsDoctorsListOpen] = useState(false);
   const [selectedSpecialtyIdFilter, setSelectedSpecialtyIdFilter] = useState(null);
 
-  // Splash finished -> go to onboarding
+  useEffect(() => {
+    // Check if user session exists in Supabase
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const loadedUser = {
+            id: session.user.id,
+            email: session.user.email,
+            fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            provider: 'supabase'
+          };
+          setUser(loadedUser);
+        }
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            provider: 'supabase'
+          });
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, []);
+
+  // Splash finished -> check if user is already logged in
   const handleSplashFinish = () => {
-    setCurrentStage('onboarding');
+    const existingUser = getStoredUser();
+    if (existingUser) {
+      setUser(existingUser);
+      setCurrentStage('main');
+    } else {
+      setCurrentStage('onboarding');
+    }
   };
 
   // Onboarding -> Auth
@@ -48,6 +85,13 @@ export default function App() {
   const handleAuthSuccess = (userData) => {
     setUser(userData);
     setCurrentStage('main');
+  };
+
+  // Sign out handler
+  const handleLogout = async () => {
+    await signOutUser();
+    setUser({ fullName: 'Guest Patient', email: '' });
+    setCurrentStage('onboarding');
   };
 
   // Booking confirmed -> Open detail screen matching frame 54s
@@ -110,7 +154,7 @@ export default function App() {
           {activeTab === 'profile' && (
             <ProfileScreen
               user={user}
-              onLogout={() => setCurrentStage('onboarding')}
+              onLogout={handleLogout}
             />
           )}
 

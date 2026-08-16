@@ -1,50 +1,65 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { User, Lock, Mail, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { signInUser, signUpUser, isSupabaseConfigured } from '../lib/supabase';
 
 export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }) {
   const [mode, setMode] = useState(isRegister ? 'register' : 'login');
   const [email, setEmail] = useState('zunaira@gmail.com');
-  const [password, setPassword] = useState('••••••••');
+  const [password, setPassword] = useState('12345678');
   const [fullName, setFullName] = useState('Zunaira Mughal');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
+    setSuccessMsg('');
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        if (mode === 'register') {
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: fullName } }
-          });
-          if (error) throw error;
-        } else {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          if (error) throw error;
-        }
-      } catch (err) {
-        console.warn('Supabase Auth error (falling back to demo mode):', err.message);
-      }
+    // Basic Validation
+    if (!email || !email.includes('@')) {
+      setErrorMsg('Please enter a valid email address.');
+      setLoading(false);
+      return;
     }
 
-    // Success callback with user profile data
-    setTimeout(() => {
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       setLoading(false);
-      onAuthSuccess({
-        email: email || 'zunaira@gmail.com',
-        fullName: mode === 'register' ? fullName : (email.includes('zunaira') ? 'Zunaira Mughal' : 'User')
-      });
-    }, 600);
+      return;
+    }
+
+    try {
+      if (mode === 'register') {
+        if (!fullName.trim()) {
+          setErrorMsg('Please enter your full name.');
+          setLoading(false);
+          return;
+        }
+
+        const userObj = await signUpUser(email, password, fullName);
+        setSuccessMsg('Account created successfully! Logging you in...');
+        
+        setTimeout(() => {
+          setLoading(false);
+          onAuthSuccess(userObj);
+        }, 800);
+      } else {
+        const userObj = await signInUser(email, password);
+        setSuccessMsg('Signed in successfully!');
+        
+        setTimeout(() => {
+          setLoading(false);
+          onAuthSuccess(userObj);
+        }, 600);
+      }
+    } catch (err) {
+      console.error('Authentication Error:', err);
+      setLoading(false);
+      setErrorMsg(err.message || 'Authentication failed. Please check your credentials.');
+    }
   };
 
   return (
@@ -67,7 +82,25 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
             : 'Fill in your details below to create a new patient account'}
         </p>
 
-        {errorMsg && <div className="auth-error">{errorMsg}</div>}
+        {isSupabaseConfigured && (
+          <div className="live-db-badge">
+            <span className="live-dot"></span> Real Supabase Auth Enabled
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="auth-alert error-alert">
+            <AlertCircle size={16} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="auth-alert success-alert">
+            <CheckCircle2 size={16} />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'register' && (
@@ -85,11 +118,11 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           )}
 
           <div className="input-group">
-            <User size={18} className="input-icon" />
+            <Mail size={18} className="input-icon" />
             <input
-              type="text"
+              type="email"
               className="form-input"
-              placeholder="Email or Username"
+              placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -101,7 +134,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
             <input
               type={showPassword ? 'text' : 'password'}
               className="form-input"
-              placeholder="Password"
+              placeholder="Password (min 6 chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -116,7 +149,13 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           </div>
 
           <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            {loading ? (
+              <span className="spinner-text">Processing...</span>
+            ) : mode === 'login' ? (
+              'Sign In'
+            ) : (
+              'Create Account'
+            )}
           </button>
         </form>
 
@@ -124,14 +163,30 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           {mode === 'login' ? (
             <p>
               Don't have an account?{' '}
-              <button type="button" className="link-btn" onClick={() => setMode('register')}>
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+              >
                 Sign Up
               </button>
             </p>
           ) : (
             <p>
               Already have an account?{' '}
-              <button type="button" className="link-btn" onClick={() => setMode('login')}>
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+              >
                 Sign In
               </button>
             </p>
@@ -148,6 +203,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           flex-direction: column;
           z-index: 20;
           overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .auth-header {
@@ -178,7 +234,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         .team-banner-wrapper {
           width: 100%;
           max-width: 280px;
-          height: 170px;
+          height: 160px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -212,17 +268,53 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         .auth-subtitle {
           font-size: 13px;
           color: #64748b;
-          margin-bottom: 24px;
+          margin-bottom: 16px;
           line-height: 1.4;
         }
 
-        .auth-error {
-          background: #fef2f2;
-          color: #ef4444;
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 12.5px;
+        .live-db-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #047857;
+          background: #d1fae5;
+          padding: 4px 10px;
+          border-radius: 12px;
           margin-bottom: 16px;
+          align-self: flex-start;
+        }
+
+        .live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px #10b981;
+        }
+
+        .auth-alert {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 14px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
+
+        .error-alert {
+          background: #ffe4e6;
+          color: #be123c;
+          border: 1px solid #fecdd3;
+        }
+
+        .success-alert {
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #bbf7d0;
         }
 
         .auth-form {
@@ -282,7 +374,12 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           box-shadow: 0 4px 14px rgba(11, 93, 113, 0.2);
         }
 
-        .submit-btn:active {
+        .submit-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .submit-btn:active:not(:disabled) {
           background: #074757;
         }
 
