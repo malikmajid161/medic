@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { DOCTORS as INITIAL_DOCTORS } from '../data/doctorsData';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -9,9 +10,10 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-// Local storage fallback for seamless offline/demo usage
+// Local storage fallback keys
 const LOCAL_STORAGE_KEY = 'medic_appointments_db';
 const USER_STORAGE_KEY = 'medic_auth_user';
+const DOCTORS_STORAGE_KEY = 'medic_registered_doctors';
 
 export const getStoredUser = () => {
   try {
@@ -31,6 +33,40 @@ export const saveStoredUser = (user) => {
   }
 };
 
+// Doctors list management
+export const getStoredDoctors = () => {
+  try {
+    const customDocs = localStorage.getItem(DOCTORS_STORAGE_KEY);
+    const parsedCustom = customDocs ? JSON.parse(customDocs) : [];
+    return [...parsedCustom, ...INITIAL_DOCTORS];
+  } catch (err) {
+    return INITIAL_DOCTORS;
+  }
+};
+
+export const saveNewDoctorProfile = (doctorObj) => {
+  try {
+    const customDocs = localStorage.getItem(DOCTORS_STORAGE_KEY);
+    const parsedCustom = customDocs ? JSON.parse(customDocs) : [];
+    const index = parsedCustom.findIndex(d => d.id === doctorObj.id || d.email === doctorObj.email);
+    
+    let updated;
+    if (index >= 0) {
+      updated = [...parsedCustom];
+      updated[index] = { ...updated[index], ...doctorObj };
+    } else {
+      updated = [doctorObj, ...parsedCustom];
+    }
+    
+    localStorage.setItem(DOCTORS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch (err) {
+    console.error('Error saving doctor profile:', err);
+    return [];
+  }
+};
+
+// Appointments management
 export const getStoredAppointments = () => {
   try {
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -53,29 +89,40 @@ export const saveAppointmentToStorage = (appointment) => {
   }
 };
 
-export const cancelAppointmentInStorage = (appointmentId) => {
+export const updateAppointmentStatusInStorage = (appointmentId, newStatus) => {
   try {
     const existing = getStoredAppointments();
     const updated = existing.map(apt => 
-      apt.id === appointmentId ? { ...apt, status: 'Cancelled' } : apt
+      apt.id === appointmentId ? { ...apt, status: newStatus } : apt
     );
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     return updated;
   } catch (err) {
-    console.error('Error cancelling appointment:', err);
+    console.error('Error updating appointment status:', err);
     return [];
   }
 };
 
-// Supabase Real Authentication Functions
-export const signUpUser = async (email, password, fullName) => {
+export const cancelAppointmentInStorage = (appointmentId) => {
+  return updateAppointmentStatusInStorage(appointmentId, 'Cancelled');
+};
+
+// Real Authentication Functions
+export const signUpUser = async (email, password, extraData = {}) => {
+  const isDoctor = extraData.role === 'doctor';
+  
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          full_name: fullName
+          full_name: extraData.fullName,
+          role: extraData.role || 'patient',
+          specialty: extraData.specialty || '',
+          hospital: extraData.hospital || '',
+          fee: extraData.fee || 'Rs. 2,000',
+          image: extraData.image || '/assets/doc_real_2.jpg'
         }
       }
     });
@@ -85,21 +132,41 @@ export const signUpUser = async (email, password, fullName) => {
     const userObj = {
       id: data.user?.id || `usr_${Date.now()}`,
       email: data.user?.email || email,
-      fullName: data.user?.user_metadata?.full_name || fullName,
+      fullName: extraData.fullName || email.split('@')[0],
+      role: extraData.role || 'patient',
+      specialty: extraData.specialty || 'General Physician',
+      hospital: extraData.hospital || 'Medic Care Hospital',
+      experience: extraData.experience || '5 years of Experience',
+      fee: extraData.fee || 'Rs. 2,000',
+      image: extraData.image || '/assets/doc_real_2.jpg',
+      hours: extraData.hours || 'Mon-Fri: 9am-5pm',
       provider: 'supabase'
     };
+
     saveStoredUser(userObj);
+    if (isDoctor) saveNewDoctorProfile(userObj);
     return userObj;
   }
 
-  // Fallback demo user if Supabase is offline
+  // Fallback local storage registration
   const fallbackUser = {
     id: `usr_${Date.now()}`,
     email,
-    fullName: fullName || 'Zunaira Mughal',
+    fullName: extraData.fullName || (isDoctor ? 'Dr. Ahmed Ali' : 'Zunaira Mughal'),
+    role: extraData.role || 'patient',
+    specialty: extraData.specialty || 'General Practitioner',
+    hospital: extraData.hospital || 'Medic City Hospital',
+    experience: extraData.experience || '6 years of Experience',
+    fee: extraData.fee || 'Rs. 2,000',
+    image: extraData.image || '/assets/doc_real_2.jpg',
+    hours: extraData.hours || 'Mon-Fri: 9am-5pm',
+    rating: 4.9,
+    reviewsCount: 12,
     provider: 'local'
   };
+
   saveStoredUser(fallbackUser);
+  if (isDoctor) saveNewDoctorProfile(fallbackUser);
   return fallbackUser;
 };
 
@@ -116,17 +183,30 @@ export const signInUser = async (email, password) => {
       id: data.user?.id || `usr_${Date.now()}`,
       email: data.user?.email || email,
       fullName: data.user?.user_metadata?.full_name || email.split('@')[0],
+      role: data.user?.user_metadata?.role || (email.toLowerCase().includes('dr') ? 'doctor' : 'patient'),
+      specialty: data.user?.user_metadata?.specialty || 'Consultant Specialist',
+      hospital: data.user?.user_metadata?.hospital || 'Medic Hospital',
+      fee: data.user?.user_metadata?.fee || 'Rs. 2,500',
+      image: data.user?.user_metadata?.image || '/assets/doc_real_2.jpg',
       provider: 'supabase'
     };
     saveStoredUser(userObj);
     return userObj;
   }
 
-  // Fallback demo user
+  // Fallback demo sign in
+  const isDoctorEmail = email.toLowerCase().includes('dr') || email.toLowerCase().includes('doctor');
   const fallbackUser = {
-    id: `usr_demo`,
+    id: `usr_demo_${Date.now()}`,
     email,
-    fullName: email.includes('zunaira') ? 'Zunaira Mughal' : 'Dr. Patient',
+    fullName: isDoctorEmail ? 'Dr. Ahmed Ali' : 'Zunaira Mughal',
+    role: isDoctorEmail ? 'doctor' : 'patient',
+    specialty: isDoctorEmail ? 'Cardiologist' : '',
+    hospital: isDoctorEmail ? 'Shaukat Khanum Hospital, Lahore' : '',
+    experience: '12 years of Experience',
+    fee: 'Rs. 2,500',
+    image: isDoctorEmail ? '/assets/doc_real_2.jpg' : '',
+    hours: 'Mon-Fri: 9am-5pm',
     provider: 'local'
   };
   saveStoredUser(fallbackUser);

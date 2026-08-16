@@ -1,16 +1,39 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, Stethoscope, Building, Award, DollarSign, Upload } from 'lucide-react';
 import { signInUser, signUpUser, isSupabaseConfigured } from '../lib/supabase';
 
 export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }) {
   const [mode, setMode] = useState(isRegister ? 'register' : 'login');
+  const [role, setRole] = useState('patient'); // 'patient' or 'doctor'
+
+  // Common Fields
   const [email, setEmail] = useState('zunaira@gmail.com');
   const [password, setPassword] = useState('12345678');
   const [fullName, setFullName] = useState('Zunaira Mughal');
+
+  // Doctor Specific Fields
+  const [specialty, setSpecialty] = useState('Cardiologist');
+  const [hospital, setHospital] = useState('Shaukat Khanum Hospital, Lahore');
+  const [experience, setExperience] = useState('10 years of Experience');
+  const [fee, setFee] = useState('Rs. 2,500');
+  const [imagePreview, setImagePreview] = useState('/assets/doc_real_2.jpg');
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Handle Photo File Upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +41,6 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
     setErrorMsg('');
     setSuccessMsg('');
 
-    // Basic Validation
     if (!email || !email.includes('@')) {
       setErrorMsg('Please enter a valid email address.');
       setLoading(false);
@@ -39,8 +61,22 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           return;
         }
 
-        const userObj = await signUpUser(email, password, fullName);
-        setSuccessMsg('Account created successfully! Logging you in...');
+        const doctorNameFormatted = role === 'doctor' && !fullName.toLowerCase().startsWith('dr.')
+          ? `Dr. ${fullName}`
+          : fullName;
+
+        const extraData = {
+          fullName: doctorNameFormatted,
+          role,
+          specialty,
+          hospital,
+          experience,
+          fee,
+          image: imagePreview
+        };
+
+        const userObj = await signUpUser(email, password, extraData);
+        setSuccessMsg(`${role === 'doctor' ? 'Doctor Account' : 'Patient Account'} created! Redirecting...`);
         
         setTimeout(() => {
           setLoading(false);
@@ -75,16 +111,47 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
       </div>
 
       <div className="auth-card">
-        <h2 className="auth-title">{mode === 'login' ? 'Login' : 'Create Account'}</h2>
+        <h2 className="auth-title">
+          {mode === 'login' ? 'Welcome Back' : role === 'doctor' ? 'Doctor Registration' : 'Patient Registration'}
+        </h2>
         <p className="auth-subtitle">
           {mode === 'login'
-            ? 'Please enter your email and password to access your account'
-            : 'Fill in your details below to create a new patient account'}
+            ? 'Sign in to manage appointments & consultations'
+            : 'Fill in your credentials to create your account'}
         </p>
+
+        {/* Role Toggle Selector */}
+        {mode === 'register' && (
+          <div className="role-selector-bar">
+            <button
+              type="button"
+              className={`role-tab ${role === 'patient' ? 'active' : ''}`}
+              onClick={() => {
+                setRole('patient');
+                setFullName('Zunaira Mughal');
+              }}
+            >
+              <User size={16} />
+              <span>Patient</span>
+            </button>
+
+            <button
+              type="button"
+              className={`role-tab ${role === 'doctor' ? 'active' : ''}`}
+              onClick={() => {
+                setRole('doctor');
+                setFullName('Dr. Ahmed Ali');
+              }}
+            >
+              <Stethoscope size={16} />
+              <span>Doctor</span>
+            </button>
+          </div>
+        )}
 
         {isSupabaseConfigured && (
           <div className="live-db-badge">
-            <span className="live-dot"></span> Real Supabase Auth Enabled
+            <span className="live-dot"></span> Supabase Connected
           </div>
         )}
 
@@ -104,17 +171,93 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
 
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'register' && (
-            <div className="input-group">
-              <User size={18} className="input-icon" />
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Full Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              {/* Doctor Avatar Upload Preview */}
+              {role === 'doctor' && (
+                <div className="doctor-photo-uploader">
+                  <img src={imagePreview} alt="Doctor Preview" className="uploaded-doc-preview" />
+                  <label htmlFor="photo-upload" className="upload-btn">
+                    <Upload size={14} />
+                    <span>Upload Profile Photo</span>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              <div className="input-group">
+                <User size={18} className="input-icon" />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={role === 'doctor' ? 'Doctor Full Name (e.g. Dr. Ahmed Ali)' : 'Full Name'}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Additional Doctor Fields */}
+              {role === 'doctor' && (
+                <>
+                  <div className="input-group">
+                    <Stethoscope size={18} className="input-icon" />
+                    <select
+                      className="form-input select-input"
+                      value={specialty}
+                      onChange={(e) => setSpecialty(e.target.value)}
+                    >
+                      <option value="Cardiologist">Cardiologist (Heart Specialist)</option>
+                      <option value="Dermatologist">Dermatologist (Skin Specialist)</option>
+                      <option value="Neurologist">Neurologist (Brain & Nerves)</option>
+                      <option value="Pediatrician">Pediatrician (Child Specialist)</option>
+                      <option value="Gastroenterologist">Gastroenterologist (Stomach)</option>
+                      <option value="General Physician">General Physician</option>
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <Building size={18} className="input-icon" />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Hospital / Clinic Name"
+                      value={hospital}
+                      onChange={(e) => setHospital(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="input-row-flex">
+                    <div className="input-group flex-1">
+                      <Award size={18} className="input-icon" />
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Experience (e.g. 10 yrs)"
+                        value={experience}
+                        onChange={(e) => setExperience(e.target.value)}
+                      />
+                    </div>
+                    <div className="input-group flex-1">
+                      <DollarSign size={18} className="input-icon" />
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Fee (e.g. Rs. 2,500)"
+                        value={fee}
+                        onChange={(e) => setFee(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
           )}
 
           <div className="input-group">
@@ -153,8 +296,10 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
               <span className="spinner-text">Processing...</span>
             ) : mode === 'login' ? (
               'Sign In'
+            ) : role === 'doctor' ? (
+              'Register as Doctor'
             ) : (
-              'Create Account'
+              'Register as Patient'
             )}
           </button>
         </form>
@@ -172,7 +317,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
                   setSuccessMsg('');
                 }}
               >
-                Sign Up
+                Sign Up Now
               </button>
             </p>
           ) : (
@@ -208,7 +353,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
 
         .auth-header {
           position: relative;
-          padding: 20px 20px 10px;
+          padding: 16px 20px 0;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -216,7 +361,7 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
 
         .back-btn {
           position: absolute;
-          top: 20px;
+          top: 16px;
           left: 20px;
           width: 38px;
           height: 38px;
@@ -233,12 +378,11 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
 
         .team-banner-wrapper {
           width: 100%;
-          max-width: 280px;
-          height: 160px;
+          max-width: 240px;
+          height: 120px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-top: 10px;
         }
 
         .team-banner-img {
@@ -252,37 +396,100 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           background: #ffffff;
           border-top-left-radius: 28px;
           border-top-right-radius: 28px;
-          padding: 30px 24px 40px;
+          padding: 24px 24px 40px;
           box-shadow: 0 -10px 30px rgba(11, 93, 113, 0.06);
           display: flex;
           flex-direction: column;
         }
 
         .auth-title {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 800;
           color: #0b5d71;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
         }
 
         .auth-subtitle {
-          font-size: 13px;
+          font-size: 12.5px;
           color: #64748b;
+          margin-bottom: 14px;
+        }
+
+        .role-selector-bar {
+          display: flex;
+          background: #f1f5f9;
+          padding: 4px;
+          border-radius: 14px;
           margin-bottom: 16px;
-          line-height: 1.4;
+        }
+
+        .role-tab {
+          flex: 1;
+          height: 42px;
+          border: none;
+          background: transparent;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 13.5px;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .role-tab.active {
+          background: #0b5d71;
+          color: #ffffff;
+          box-shadow: 0 4px 10px rgba(11, 93, 113, 0.2);
+        }
+
+        .doctor-photo-uploader {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          background: #f8fafc;
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px dashed #cbd5e1;
+          margin-bottom: 12px;
+        }
+
+        .uploaded-doc-preview {
+          width: 54px;
+          height: 54px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid #0b5d71;
+        }
+
+        .upload-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #0b5d71;
+          background: #ffffff;
+          border: 1px solid #0b5d71;
+          padding: 6px 12px;
+          border-radius: 8px;
+          cursor: pointer;
         }
 
         .live-db-badge {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          font-size: 11.5px;
+          font-size: 11px;
           font-weight: 700;
           color: #047857;
           background: #d1fae5;
           padding: 4px 10px;
           border-radius: 12px;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
           align-self: flex-start;
         }
 
@@ -291,36 +498,26 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           height: 7px;
           border-radius: 50%;
           background: #10b981;
-          box-shadow: 0 0 8px #10b981;
         }
 
         .auth-alert {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 12px 14px;
+          padding: 10px 12px;
           border-radius: 10px;
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 600;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
         }
 
-        .error-alert {
-          background: #ffe4e6;
-          color: #be123c;
-          border: 1px solid #fecdd3;
-        }
-
-        .success-alert {
-          background: #dcfce7;
-          color: #15803d;
-          border: 1px solid #bbf7d0;
-        }
+        .error-alert { background: #ffe4e6; color: #be123c; }
+        .success-alert { background: #dcfce7; color: #15803d; }
 
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
         }
 
         .input-group {
@@ -329,23 +526,34 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
           align-items: center;
         }
 
+        .input-row-flex {
+          display: flex;
+          gap: 10px;
+        }
+
+        .flex-1 { flex: 1; }
+
         .input-icon {
           position: absolute;
-          left: 16px;
+          left: 14px;
           color: #64748b;
         }
 
         .form-input {
           width: 100%;
-          height: 52px;
-          padding: 0 46px 0 48px;
+          height: 48px;
+          padding: 0 40px 0 44px;
           border: 1.5px solid #e2e8f0;
           border-radius: 12px;
-          font-size: 14.5px;
+          font-size: 13.5px;
           color: #0f172a;
           outline: none;
           background: #ffffff;
-          transition: border-color 0.2s;
+        }
+
+        .select-input {
+          cursor: pointer;
+          appearance: none;
         }
 
         .form-input:focus {
@@ -361,32 +569,22 @@ export default function AuthScreen({ isRegister = false, onAuthSuccess, onBack }
         }
 
         .submit-btn {
-          height: 52px;
+          height: 48px;
           background: #0b5d71;
           color: #ffffff;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 14.5px;
           border: none;
           border-radius: 12px;
-          margin-top: 10px;
+          margin-top: 8px;
           cursor: pointer;
-          transition: background 0.2s;
           box-shadow: 0 4px 14px rgba(11, 93, 113, 0.2);
         }
 
-        .submit-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .submit-btn:active:not(:disabled) {
-          background: #074757;
-        }
-
         .auth-footer-toggle {
-          margin-top: 24px;
+          margin-top: 20px;
           text-align: center;
-          font-size: 13.5px;
+          font-size: 13px;
           color: #64748b;
         }
 
